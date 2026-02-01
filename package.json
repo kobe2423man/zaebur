@@ -2,7 +2,7 @@
   "name": "idx-keeper",
   "version": "1.0.0",
   "dependencies": {
-    "puppeteer": "latest"  
+    "puppeteer": "latest"
   },
   "scripts": {
     "start": "node index.js"

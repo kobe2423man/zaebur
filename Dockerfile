@@ -1,16 +1,18 @@
 FROM ghcr.io/puppeteer/puppeteer:latest
 
-# 1. 告诉 Puppeteer 不要下载 Chrome (镜像里自带了)
+# 1. 关键设置：告诉 Puppeteer 不要自己下载 Chrome，也不要乱找路径
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
-# 2. 设置工作目录 (默认是 /home/pptruser)
 WORKDIR /home/pptruser
 
-# 3. 关键：复制文件时把所有权给 pptruser，否则 npm install 会报错
+# 2. 复制配置并安装依赖 (使用淘宝源加速，解决卡顿)
 COPY --chown=pptruser:pptruser package*.json ./
+RUN npm config set registry https://registry.npmmirror.com
 RUN npm install
 
+# 3. 复制脚本代码
 COPY --chown=pptruser:pptruser . .
 
-# 4. 启动脚本
+# 4. 启动
 CMD ["node", "index.js"]

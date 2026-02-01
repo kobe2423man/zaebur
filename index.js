@@ -1,48 +1,62 @@
 const puppeteer = require('puppeteer');
 
-const TARGET_URL = process.env.IDX_URL; 
+const TARGET_URL = process.env.IDX_URL;
 
+// 检查环境变量
 if (!TARGET_URL) {
-    console.error("错误：请在 Zeabur 环境变量中设置 IDX_URL");
+    console.error("❌ 严重错误：请在 Zeabur 环境变量中设置 IDX_URL");
     process.exit(1);
 }
 
 async function ping() {
-    console.log(`[${new Date().toLocaleString()}] 开始访问: ${TARGET_URL}`);
-    const browser = await puppeteer.launch({
-        headless: "new",
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-gpu'
-        ]
-    });
-
+    console.log(`[${new Date().toLocaleString()}] 🚀 开始执行保活任务...`);
+    let browser;
     try {
+        browser = await puppeteer.launch({
+            headless: "new",
+            // 👇👇👇 核心修复：强制使用系统自带的 Chrome 👇👇👇
+            executablePath: 'google-chrome-stable',
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage', // 解决 Docker 内存不足崩溃
+                '--disable-gpu'
+            ]
+        });
+
         const page = await browser.newPage();
-        // 屏蔽资源省流量
+        
+        // 开启省流模式：拦截图片、字体、样式表
         await page.setRequestInterception(true);
         page.on('request', (req) => {
-            if (['image', 'stylesheet', 'font'].includes(req.resourceType())) {
+            const resourceType = req.resourceType();
+            if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
                 req.abort();
             } else {
                 req.continue();
             }
         });
 
+        console.log(`正在访问目标: ${TARGET_URL}`);
+        // 设置 60秒超时，等待页面加载完成
         await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
-        console.log(`✅ 访问成功`);
-        await new Promise(r => setTimeout(r, 10000)); // 停留10秒
+        console.log(`✅ 访问成功！页面已激活`);
+        
+        // 保持 30 秒活跃状态
+        await new Promise(r => setTimeout(r, 30000));
 
     } catch (error) {
-        console.error(`❌ 访问出错: ${error.message}`);
+        console.error(`❌ 任务出错: ${error.message}`);
     } finally {
-        await browser.close();
+        if (browser) {
+            await browser.close();
+        }
+        console.log(`本轮任务结束，等待下一次循环...`);
     }
 }
 
-// 启动立即执行一次
+// 1. 启动时立即执行一次
 ping();
-// 每 15 分钟执行一次
+
+// 2. 之后每 15 分钟执行一次
 setInterval(ping, 15 * 60 * 1000);

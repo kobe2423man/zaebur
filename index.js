@@ -15,7 +15,7 @@ async function ping() {
         browser = await puppeteer.launch({
             headless: "new",
             // 👇👇👇 核心修复：强制使用系统自带的 Chrome 👇👇👇
-            executablePath: 'google-chrome-stable',
+            executablePath: '/usr/bin/google-chrome-stable',
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
